@@ -446,7 +446,7 @@ def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
 		else:
 			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 
-def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']):
+def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.legacy.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']):
 	if not (outVectors or outClasses):
 		raise Exception("At least one of outVectors or outClasses must be set to True.")
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
@@ -463,12 +463,21 @@ def loadHistory(modelName, modelClass = 'cat'):
 	with open(os.path.join(get_history_path(), f"{modelName}_{modelClass}_trainHistory"), 'rb') as f:  # loading old history 
 		histories = pickle.load(f)
 		for hist in histories:
-			print("Structure: {0}\nClass: {1}\nOptimizer: {2}\nLearningRate: {3}\nLosses: {4}\nName: {5}\nEpochs: {6}\nTimestamp: {7}\nTraining History:\n".format(hist['struct'], hist['class'], hist['optimizer'], hist['lr'], hist['losses'], hist['name'], hist['epochs'], hist['timestamp']))
-			for i, epoch in enumerate(hist['history']):
-				print("{0}: {1}".format(i, epoch))
-			print("\nEvaluation History:\n")
-			for i, epoch in enumerate(hist['evalHistory']):
-				print("{0}: {1}".format(i, epoch))
+			if isinstance(hist, dict):
+				# Old format - dictionary
+				print("Structure: {0}\nClass: {1}\nOptimizer: {2}\nLearningRate: {3}\nLosses: {4}\nName: {5}\nEpochs: {6}\nTimestamp: {7}\nTraining History:\n".format(
+					hist['struct'], hist['class'], hist['optimizer'], hist['lr'], hist['losses'], 
+					hist['name'], hist['epochs'], hist['timestamp']))
+				for i, epoch in enumerate(hist['history']):
+					print("{0}: {1}".format(i, epoch))
+				print("\nEvaluation History:\n")
+				for i, epoch in enumerate(hist['evalHistory']):
+					print("{0}: {1}".format(i, epoch))
+			else:
+				# New format - History object
+				print("Training History:")
+				for metric_name, values in hist.history.items():
+					print(f"{metric_name}: {values}")
 			print("\n")
 
 def loadHistories(modelSets):
