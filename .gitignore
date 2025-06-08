@@ -1,0 +1,4 @@
+LINEMOD/*/JPEGImages
+LINEMOD/*/labels
+LINEMOD/*/mask
+__pycache__/*
