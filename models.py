@@ -288,10 +288,14 @@ def uNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, model
 	return tf.keras.Model(inputs = [xIn], outputs = outputs, name = modelName)
 	
 def get_models_path():
-	return os.path.join(os.getcwd(), 'models')
+	path = os.path.join(os.getcwd(), 'models')
+	os.makedirs(path, exist_ok=True)
+	return path
 
 def get_history_path():
-	return os.path.join(os.getcwd(), 'models', 'history')
+	path = os.path.join(os.getcwd(), 'models', 'history')
+	os.makedirs(path, exist_ok=True)
+	return path
 
 def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True):
 	if not (outVectors or outClasses):
