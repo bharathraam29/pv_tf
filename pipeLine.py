@@ -12,6 +12,12 @@ noiseScale = .1 # artificially add noise to true target data, used for testing p
 minHyps = 55
 checkQuads = True
 
+def get_linemod_path(model_name):
+	return os.path.join(os.getcwd(), 'LINEMOD', model_name)
+
+def get_models_path():
+	return os.path.join(os.getcwd(), 'models')
+
 def predictPose(coords, classes, showClassPred = False, labels = False, addNoise = False, modelName = 'cat', checkPreds = False, altLabels = True, pruning = True):
 	if showClassPred: # display class prediction
 		showImage(classes)
@@ -39,10 +45,10 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 	
 	#covarDict = getCovariance(hypDict, meanDict)
 	if altLabels:
-		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'altPoints.txt'))
+		pts3d = np.loadtxt(os.path.join(get_linemod_path(modelName), 'altPoints.txt'))
 		preds = dictToArray(meanDict)
 	else:
-		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'bb8_3d.txt'))
+		pts3d = np.loadtxt(os.path.join(get_linemod_path(modelName), 'bb8_3d.txt'))
 		preds = dictToArray(meanDict)[1:] # ignoring centroid prediction
 	
 	if checkPreds is not False: # show predicted keypoints on image
@@ -58,7 +64,7 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 			#plt.show()
 			checkPreds[py][px] = temp
 			
-	drawPoints = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'bb8_3d.txt'))
+	drawPoints = np.loadtxt(os.path.join(get_linemod_path(modelName), 'bb8_3d.txt'))
 	
 	return True, pnp(pts3d, preds, drawPoints)
 	
@@ -184,16 +190,17 @@ def testModelMask(modelName, modelStruct, tests = 5, modelClass = 'cat', outClas
 		return
 	
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses)
-	models.joinFiles(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass, model)
+	models.joinFiles(os.path.join(get_models_path(), f'{modelName}_{modelClass}'), model)
 	model.summary()
 	
 	#model = tf.keras.models.load_model(modelStruct, modelName, modelClass = modelClass, outVectors = outVectors, outClasses = outClasses, optimizer = optimizer, learning_rate = learning_rate, losses = losses, metrics = metrics)
 	
-	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelClass
+	basePath = get_linemod_path(modelClass)
 	plt.figure()
 	for i in range(tests):
-		randNum = random.randrange(len(os.listdir(basePath + '\\JPEGImages\\')))
-		orig = imread(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
+		image_dir = os.path.join(basePath, 'JPEGImages')
+		randNum = random.randrange(len(os.listdir(image_dir)))
+		orig = imread(os.path.join(image_dir, os.listdir(image_dir)[randNum]))
 		#orig2 = data.filePathToArray(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
 		pred = model.predict(np.array([orig]))
 		
@@ -340,15 +347,15 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 		
 		if allValid:
 			validData = data.getDataSplit(modelClass = modelSet.modelClass)[1]
-			basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelSet.modelClass
+			basePath = get_linemod_path(modelSet.modelClass)
 			trials = len(validData)
 		
 		for i in range(trials):
 		
 			if allValid:
-				with open(basePath + '\\labels\\' + validData[i][2]) as f:
+				with open(os.path.join(basePath, 'labels', validData[i][2])) as f:
 					labels = f.readline().split(' ')[1:19]
-				image = data.filePathToArray(basePath + '\\JPEGImages\\' + validData[i][0])
+				image = data.filePathToArray(os.path.join(basePath, 'JPEGImages', validData[i][0]))
 			else:
 				image, labels = data.getDataSplitImage(True)
 			
@@ -381,7 +388,7 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 					img = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 					drawPose(img, labelDrawPoints(yPred))
 					drawPose(img, labelDrawPoints(yTrue), (0,255,0))
-					cv2.imwrite("savedImages\\{0} - {1}.jpg".format(modelName, i), img)
+					cv2.imwrite(os.path.join("savedImages", f"{modelName} - {i}.jpg"), img)
 		
 		trueList = np.array(trueList)
 		predList = np.array(predList)
@@ -389,7 +396,8 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 		
 		if saveAccuracy:
 			#with open("accuracyHistory\\{0}_{1}_{2}_trials_{3}_hyps{4}".format(modelName, modelSet.modelClass, trials, numHypotheses, ('_pruning{0}'.format(pruneRatio) if pruneBool else '')), 'wb') as f: # create model history
-			with open("accuracyHistory\\" + modelName + '_' + modelSet.modelClass, 'wb') as f: # create model history
+			accuracy_file = os.path.join("accuracyHistory", f"{modelName}_{modelSet.modelClass}")
+			with open(accuracy_file, 'wb') as f: # create model history
 				pickle.dump({'true': trueList, 'pred': predList}, f)
 
 if __name__ == "__main__" :

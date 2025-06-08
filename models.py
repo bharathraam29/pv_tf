@@ -287,75 +287,60 @@ def uNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, model
 	
 	return tf.keras.Model(inputs = [xIn], outputs = outputs, name = modelName)
 	
-def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True): # train and save model weights
+def get_models_path():
+	return os.path.join(os.getcwd(), 'models')
+
+def get_history_path():
+	return os.path.join(os.getcwd(), 'models', 'history')
+
+def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True):
 	if not (outVectors or outClasses):
 		print("At least one of outVectors or outClasses must be set to True.")
 		return
-	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
-	#model.summary()
-	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics, loss_weights = loss_weights)
 	
-	trainData, validData = None, None
-	if dataSplit: # if using datasplit, otherwise all available data is used
+	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
+	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
+	
+	if dataSplit:
 		trainData, validData = data.getDataSplit(modelClass = modelClass)
 	
-	logger = tf.keras.callbacks.CSVLogger("models\\history\\" + modelName + "_" + modelClass + "_history.csv", append = True)
-	#evalLogger = tf.keras.callbacks.CSVLogger("models\\history\\" + modelName + "_" + modelClass + "_eval_history.csv", append = True)
+	logger = tf.keras.callbacks.CSVLogger(os.path.join(get_history_path(), f"{modelName}_{modelClass}_history.csv"), append = True)
 	
-	history, valHistory = [], []
-	
-	if type(losses) is dict:
-		outKeys = list(losses.keys())
-		if len(outKeys) == 2: # combined output
-			for i in range(epochs):
-				print("Epoch {0} of {1}".format(i + 1, epochs))
-				hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, out0 = outKeys[0], out1 = outKeys[1], altLabels = altLabels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), max_queue_size = 2, callbacks = [logger])
-				history.append(hist.history)
-				if dataSplit:
-					print("Validation:")
-					valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], altLabels = altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
-					valHistory.append(valHist)
-		else:
-			raise Exception("Probably shouldn't be here ever..")
+	if dataSplit:
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation),
+							 steps_per_epoch = math.ceil(len(trainData) / batchSize),
+							 epochs = epochs,
+							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, altLabels = altLabels, augmentation = False),
+							 validation_steps = math.ceil(len(validData) / batchSize),
+							 callbacks = [logger],
+							 max_queue_size = 2)
 	else:
-		for i in range(epochs):
-			print("Epoch {0} of {1}".format(i + 1, epochs))
-			hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), max_queue_size = 2, callbacks = [logger])
-			history.append(hist.history)
-			if dataSplit:
-				print("Validation:")
-				valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, altLabels = altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
-				valHistory.append(valHist)
-		
-	historyLog = {"struct": modelStruct.__name__,
-		"class" : modelClass,
-		"optimizer": optimizer,
-		"lr" : learning_rate,
-		"losses": losses,
-		"name": modelName,
-		"epochs": epochs,
-		"history": history,
-		"evalHistory": valHistory,
-		"timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-	}
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, altLabels = altLabels, augmentation = augmentation),
+							 steps_per_epoch = 100,
+							 epochs = epochs,
+							 callbacks = [logger],
+							 max_queue_size = 2)
 	
 	if saveModel:
-		model.save_weights(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
-		chunkify(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
-		#model.save(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
-		if not os.path.exists("models\\history\\" + modelName + '_trainHistory'):
-			with open("models\\history\\" + modelName + '_' + modelClass + '_trainHistory', 'wb') as f: # create model history
+		model_path = os.path.join(get_models_path(), f"{modelName}_{modelClass}")
+		model.save_weights(model_path)
+		chunkify(model_path)
+		
+		history_path = os.path.join(get_history_path(), f"{modelName}_{modelClass}_trainHistory")
+		if not os.path.exists(history_path):
+			with open(history_path, 'wb') as f:  # create model history
 				pickle.dump([], f)
-		with open("models\\history\\" + modelName + '_' + modelClass + '_trainHistory', 'rb') as f: # loading old history 
+		with open(history_path, 'rb') as f:  # loading old history 
 			histories = pickle.load(f)
 		histories.append(historyLog)
-		with open("models\\history\\" + modelName + '_' + modelClass + '_trainHistory', 'wb') as f: # saving the history of the model
+		with open(history_path, 'wb') as f:  # saving the history of the model
 			pickle.dump(histories, f)
 		
 	return model
 
-def chunkify(input_file, chunk_size = 104856576 ):
-	with open(input_file + '.data-00000-of-00001', 'rb') as f:
+def chunkify(input_file, chunk_size = 104856576):
+	data_file = input_file + '.data-00000-of-00001'
+	with open(data_file, 'rb') as f:
 		chunk_num = 0
 		while True:
 			chunk = f.read(chunk_size)
@@ -365,10 +350,11 @@ def chunkify(input_file, chunk_size = 104856576 ):
 				chunk_file.write(chunk)
 			chunk_num += 1
 
-	os.remove(input_file + '.data-00000-of-00001')
+	os.remove(data_file)
 
 def joinFiles(input_file, model):
-	with open(input_file + '.data-00000-of-00001', 'wb') as combined:
+	data_file = input_file + '.data-00000-of-00001'
+	with open(data_file, 'wb') as combined:
 		chunk_num = 0
 		while True:
 			try:
@@ -379,7 +365,7 @@ def joinFiles(input_file, model):
 				break
 	
 	model.load_weights(input_file)
-	os.remove(input_file + '.data-00000-of-00001')
+	os.remove(data_file)
 
 def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
@@ -393,8 +379,8 @@ def trainModels(modelSets, shutDown = False):
 	if shutDown:
 		os.system('shutdown -s')
 
-def evaluateModel(modelStruct, modelName, evalGen, modelClass = 'cat', outVectors = False, outClasses = False, batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], samples = 100): # test existing model performance
-	model = tf.keras.models.load_model(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
+def evaluateModel(modelStruct, modelName, evalGen, modelClass = 'cat', outVectors = False, outClasses = False, batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], samples = 100):
+	model = tf.keras.models.load_model(os.path.join(get_models_path(), f"{modelName}_{modelClass}"))
 	model.evaluate(evalGen(modelClass, batchSize), steps = samples // batchSize)
 	
 def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
@@ -412,16 +398,17 @@ def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
 		else:
 			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 
-def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']): # return compiled tf keras model
+def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']):
 	if not (outVectors or outClasses):
 		raise Exception("At least one of outVectors or outClasses must be set to True.")
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
-	joinFiles(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass, model)
+	model_path = os.path.join(get_models_path(), f"{modelName}_{modelClass}")
+	joinFiles(model_path, model)
 	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
 	return model
 
 def loadHistory(modelName, modelClass = 'cat'):
-	with open("models\\history\\" + modelName + '_' + modelClass + '_trainHistory', 'rb') as f: # loading old history 
+	with open(os.path.join(get_history_path(), f"{modelName}_{modelClass}_trainHistory"), 'rb') as f:  # loading old history 
 		histories = pickle.load(f)
 		for hist in histories:
 			print("Structure: {0}\nClass: {1}\nOptimizer: {2}\nLearningRate: {3}\nLosses: {4}\nName: {5}\nEpochs: {6}\nTimestamp: {7}\nTraining History:\n".format(hist['struct'], hist['class'], hist['optimizer'], hist['lr'], hist['losses'], hist['name'], hist['epochs'], hist['timestamp']))
@@ -441,7 +428,7 @@ def plotHistories(modelSets): # display loss values over epochs using pyplot
 	plt.figure()
 	maxLen = 0
 	for modelSet in modelSets:
-		with open("models\\history\\" + modelSet.name + '_' + modelSet.modelClass + '_trainHistory', 'rb') as f: # loading old history 
+		with open(os.path.join(get_history_path(), f"{modelSet.name}_{modelSet.modelClass}_trainHistory"), 'rb') as f: # loading old history 
 			histories = pickle.load(f)
 		for hist in histories:
 			if len(hist['history']) > maxLen:
