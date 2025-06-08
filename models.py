@@ -492,21 +492,37 @@ def plotHistories(modelSets): # display loss values over epochs using pyplot
 		with open(os.path.join(get_history_path(), f"{modelSet.name}_{modelSet.modelClass}_trainHistory"), 'rb') as f: # loading old history 
 			histories = pickle.load(f)
 		for hist in histories:
-			if len(hist['history']) > maxLen:
-				maxLen = len(hist['history'])
-			plt.subplot(211)
-			plt.plot([x['loss'] for x in hist['history']], label = hist['name'])
-			plt.subplot(212)
-			plt.plot([x[0] for x in hist['evalHistory']], label = hist['name'])
+			if isinstance(hist, dict):
+				# Old format - dictionary
+				if len(hist['history']) > maxLen:
+					maxLen = len(hist['history'])
+				plt.subplot(211)
+				plt.plot([x['loss'] for x in hist['history']], label=hist['name'])
+				plt.subplot(212)
+				plt.plot([x[0] for x in hist['evalHistory']], label=hist['name'])
+			else:
+				# New format - History object
+				history_len = len(hist.history['loss'])
+				if history_len > maxLen:
+					maxLen = history_len
+				plt.subplot(211)
+				plt.plot(hist.history['loss'], label=f"{modelSet.name} (training)")
+				if 'val_loss' in hist.history:
+					plt.subplot(212)
+					plt.plot(hist.history['val_loss'], label=f"{modelSet.name} (validation)")
+	
 	plt.subplot(211)
 	plt.ylabel("Training Loss")
 	plt.xlabel("Epoch")
 	plt.xticks(np.arange(0, maxLen, 1.0))
+	plt.legend()
+	
 	plt.subplot(212)
 	plt.ylabel("Validation Loss")
 	plt.xlabel("Epoch")
 	plt.xticks(np.arange(0, maxLen, 1.0))
 	plt.legend()
+	
 	plt.show()
 	plt.close()
 			
@@ -536,6 +552,6 @@ if __name__ == "__main__" :
 	modelSets = [modelSet('stvNet_new_coords')]
 	# trainModels(modelSets)
 	
-	evaluateModels(modelSets)
-	#loadHistories(modelSets)
-	#plotHistories(modelSets)
+	# evaluateModels(modelSets)
+	loadHistories(modelSets)
+	plotHistories(modelSets)
