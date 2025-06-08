@@ -358,6 +358,10 @@ def chunkify(input_file, chunk_size = 104856576):
 
 def joinFiles(input_file, model):
 	data_file = input_file + '.data-00000-of-00001'
+	
+	# Old implementation:
+	"""
+	data_file = input_file + '.data-00000-of-00001'
 	with open(data_file, 'wb') as combined:
 		chunk_num = 0
 		while True:
@@ -370,6 +374,47 @@ def joinFiles(input_file, model):
 	
 	model.load_weights(input_file)
 	os.remove(data_file)
+	"""
+	
+	# New implementation with better error handling:
+	# Check if part files exist
+	part_files = []
+	chunk_num = 0
+	while True:
+		part_file = f'{input_file}.part-{chunk_num}'
+		if not os.path.exists(part_file):
+			break
+		part_files.append(part_file)
+		chunk_num += 1
+	
+	if not part_files:
+		raise Exception(f"No .part files found for {input_file}. Expected files like {input_file}.part-0, {input_file}.part-1, etc.")
+	
+	print(f"Found {len(part_files)} part files: {', '.join(part_files)}")
+	
+	# Combine the parts
+	try:
+		with open(data_file, 'wb') as combined:
+			for part_file in part_files:
+				with open(part_file, 'rb') as f:
+					combined.write(f.read())
+		
+		# Load the weights
+		try:
+			model.load_weights(input_file)
+			print("Successfully loaded model weights")
+		except Exception as e:
+			raise Exception(f"Error loading model weights: {str(e)}")
+		finally:
+			# Clean up the combined file
+			if os.path.exists(data_file):
+				os.remove(data_file)
+	
+	except Exception as e:
+		# Clean up on error
+		if os.path.exists(data_file):
+			os.remove(data_file)
+		raise Exception(f"Error joining files: {str(e)}")
 
 def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
