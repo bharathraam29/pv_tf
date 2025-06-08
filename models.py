@@ -486,9 +486,9 @@ def loadHistories(modelSets):
 		loadHistory(modelSet.name, modelSet.modelClass)
 		
 def plotHistories(modelSets): # display loss values over epochs using pyplot
-	plt.figure()
-	maxLen = 0
 	for modelSet in modelSets:
+		plt.figure(figsize=(12, 8))
+		maxLen = 0
 		with open(os.path.join(get_history_path(), f"{modelSet.name}_{modelSet.modelClass}_trainHistory"), 'rb') as f: # loading old history 
 			histories = pickle.load(f)
 		for hist in histories:
@@ -511,20 +511,26 @@ def plotHistories(modelSets): # display loss values over epochs using pyplot
 					plt.subplot(212)
 					plt.plot(hist.history['val_loss'], label=f"{modelSet.name} (validation)")
 	
-	plt.subplot(211)
-	plt.ylabel("Training Loss")
-	plt.xlabel("Epoch")
-	plt.xticks(np.arange(0, maxLen, 1.0))
-	plt.legend()
+		plt.subplot(211)
+		plt.ylabel("Training Loss")
+		plt.xlabel("Epoch")
+		plt.xticks(np.arange(0, maxLen, 1.0))
+		plt.legend()
+		plt.title(f"Training and Validation Loss - {modelSet.name}")
 	
-	plt.subplot(212)
-	plt.ylabel("Validation Loss")
-	plt.xlabel("Epoch")
-	plt.xticks(np.arange(0, maxLen, 1.0))
-	plt.legend()
+		plt.subplot(212)
+		plt.ylabel("Validation Loss")
+		plt.xlabel("Epoch")
+		plt.xticks(np.arange(0, maxLen, 1.0))
+		plt.legend()
 	
-	plt.show()
-	plt.close()
+		# Create plots directory if it doesn't exist
+		plots_dir = os.path.join(os.getcwd(), 'plots')
+		os.makedirs(plots_dir, exist_ok=True)
+		
+		# Save the plot
+		plt.savefig(os.path.join(plots_dir, f"{modelSet.name}_{modelSet.modelClass}_loss_history.png"))
+		plt.close()
 			
 modelsDict = {
 	'uNet_classes' : modelDictVal(uNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
