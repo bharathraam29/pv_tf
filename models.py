@@ -403,12 +403,11 @@ def joinFiles(input_file, model):
 		try:
 			model.load_weights(input_file)
 			print("Successfully loaded model weights")
+			return data_file  # Return the data file path so it can be cleaned up later
 		except Exception as e:
-			raise Exception(f"Error loading model weights: {str(e)}")
-		finally:
-			# Clean up the combined file
 			if os.path.exists(data_file):
 				os.remove(data_file)
+			raise Exception(f"Error loading model weights: {str(e)}")
 	
 	except Exception as e:
 		# Clean up on error
@@ -452,8 +451,12 @@ def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = Fa
 		raise Exception("At least one of outVectors or outClasses must be set to True.")
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
 	model_path = os.path.join(get_models_path(), f"{modelName}_{modelClass}")
-	joinFiles(model_path, model)
-	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
+	data_file = joinFiles(model_path, model)  # Get the data file path
+	try:
+		model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
+	finally:
+		if data_file and os.path.exists(data_file):  # Clean up the data file after compilation
+			os.remove(data_file)
 	return model
 
 def loadHistory(modelName, modelClass = 'cat'):
