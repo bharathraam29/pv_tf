@@ -297,12 +297,12 @@ def get_history_path():
 	os.makedirs(path, exist_ok=True)
 	return path
 
-def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True):
+def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True , inputShape = (480, 640, 3)):
 	if not (outVectors or outClasses):
 		print("At least one of outVectors or outClasses must be set to True.")
 		return
 	
-	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
+	model = modelStruct(inputShape = inputShape, outVectors = outVectors, outClasses = outClasses, modelName = modelName)
 	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
 	
 	if dataSplit:
@@ -419,7 +419,10 @@ def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
 		print("Training {0}".format(modelSet.name))
 		model = modelsDict[modelSet.name]
-		trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, altLabels = model.altLabels, augmentation = model.augmentation)
+		if modelSet.inputShape is not None:
+			trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, altLabels = model.altLabels, augmentation = model.augmentation, inputShape = modelSet.inputShape)
+		else:
+			trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, altLabels = model.altLabels, augmentation = model.augmentation, inputShape=(480, 640, 3))
 		
 		K.clear_session()
 		K.reset_uids()
@@ -552,12 +555,13 @@ modelsDict = {
 	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
 	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
 	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, augmentation = False),
+	'stvNet_new_coords_HANDAL' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False, inputShape = (1920, 1440, 3)),
 }
 	
 if __name__ == "__main__" :
 	modelSets = [modelSet('stvNet_new_coords')]
-	# trainModels(modelSets)
+	trainModels(modelSets)
 	
-	# evaluateModels(modelSets)
+	evaluateModels(modelSets)
 	loadHistories(modelSets)
 	plotHistories(modelSets)
