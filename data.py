@@ -85,9 +85,9 @@ def classTrainingGenerator(modelClass, batchSize, masterList=None, height=480, w
 
 def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, augmentation=True, altLabels=True):
     basePath = get_linemod_path(modelClass)
-    masterList = getMasterList(basePath)
-    random.shuffle(masterList)
-    # if masterList is None:
+    if masterList is None:
+        masterList = getMasterList(basePath)
+        random.shuffle(masterList)
 
     i = 0
     while True:
@@ -231,7 +231,7 @@ def labelFloatsToPixels(floatList, height=480, width=640, decPlace=0):
         
     return labelList
 
-def getDataSplit(genNew=False, split=.8, modelClass='cat'):
+def getDataSplit(genNew=True, split=.8, modelClass='cat'):
     if genNew:  # create split
         basePath = get_linemod_path(modelClass)
         masterList = getMasterList(basePath)

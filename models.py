@@ -298,6 +298,7 @@ def get_history_path():
 	return path
 
 def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True , inputShape = (480, 640, 3)):
+	
 	if not (outVectors or outClasses):
 		print("At least one of outVectors or outClasses must be set to True.")
 		return
@@ -555,13 +556,13 @@ modelsDict = {
 	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
 	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
 	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, augmentation = False),
-	'stvNet_new_coords_HANDAL' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False, inputShape = (1920, 1440, 3)),
+	'stvNet_new_coords_HANDAL' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False, inputShape = (1440,1920, 3)),
 }
 	
 if __name__ == "__main__" :
-	model_info = modelsDict['stvNet_new_coords']
+	model_info = modelsDict['stvNet_new_coords_HANDAL']
 	input_shape = model_info.inputShape if hasattr(model_info, 'inputShape') else None
-	modelSets = [modelSet('stvNet_new_coords', inputShape=input_shape)]
+	modelSets = [modelSet('stvNet_new_coords_HANDAL', inputShape=input_shape)]
 	trainModels(modelSets)
 	
 	evaluateModels(modelSets)
