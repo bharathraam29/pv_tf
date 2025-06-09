@@ -310,17 +310,17 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 		trainData, validData = data.getDataSplit(modelClass = modelClass)
 	
 	logger = tf.keras.callbacks.CSVLogger(os.path.join(get_history_path(), f"{modelName}_{modelClass}_history.csv"), append = True)
-	
+	data_h, data_w = inputShape[0], inputShape[1]
 	if dataSplit:
-		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation),
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation, height = data_h, width = data_w),
 							 steps_per_epoch = math.ceil(len(trainData) / batchSize),
 							 epochs = epochs,
-							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, altLabels = altLabels, augmentation = False),
+							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, altLabels = altLabels, augmentation = False, height = data_h, width = data_w),
 							 validation_steps = math.ceil(len(validData) / batchSize),
 							 callbacks = [logger],
 							 max_queue_size = 2)
 	else:
-		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, altLabels = altLabels, augmentation = augmentation),
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, altLabels = altLabels, augmentation = augmentation, height = data_h, width = data_w),
 							 steps_per_epoch = 100,
 							 epochs = epochs,
 							 callbacks = [logger],
