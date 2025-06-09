@@ -48,10 +48,8 @@ def getMasterList(basePath):
 
 def classTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, augmentation=True, **unused):
     basePath = get_linemod_path(modelClass)
-
-    if masterList is None:
-        masterList = getMasterList(basePath)
-        random.shuffle(masterList)
+    masterList = getMasterList(basePath)
+    random.shuffle(masterList)
 
     i = 0
     while True:
@@ -87,10 +85,10 @@ def classTrainingGenerator(modelClass, batchSize, masterList=None, height=480, w
 
 def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, augmentation=True, altLabels=True):
     basePath = get_linemod_path(modelClass)
+    masterList = getMasterList(basePath)
+    random.shuffle(masterList)
+    # if masterList is None:
 
-    if masterList is None:
-        masterList = getMasterList(basePath)
-        random.shuffle(masterList)
     i = 0
     while True:
         xBatch = []
@@ -131,10 +129,8 @@ def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, 
 
 def combinedTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, out0='activation_9', out1='activation_10', augmentation=True, altLabels=False):
     basePath = get_linemod_path(modelClass)
-
-    if masterList is None:
-        masterList = getMasterList(basePath)
-        random.shuffle(masterList)
+    masterList = getMasterList(basePath)
+    random.shuffle(masterList)
     i = 0
     while True:
         xBatch = []
