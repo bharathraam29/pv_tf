@@ -1,8 +1,9 @@
 class modelSet:
 	
-	def __init__(self, modelName, modelClass = 'cat'):
+	def __init__(self, modelName, modelClass = 'cat', inputShape = None):
 		self.name = modelName
 		self.modelClass = modelClass
+		self.inputShape = inputShape
 
 class modelWrapper: # allows user to use single-net and double-net model interchangeably 
 	
