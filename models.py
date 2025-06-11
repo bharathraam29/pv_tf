@@ -562,7 +562,7 @@ modelsDict = {
 if __name__ == "__main__" :
 	model_info = modelsDict['stvNet_new_coords_HANDAL']
 	input_shape = model_info.inputShape if hasattr(model_info, 'inputShape') else None
-	modelSets = [modelSet('stvNet_new_coords_HANDAL', inputShape=input_shape)]
+	modelSets = [modelSet('stvNet_new_coords_HANDAL', modelClass='eggbox', inputShape=input_shape)]
 	trainModels(modelSets)
 	
 	evaluateModels(modelSets)
