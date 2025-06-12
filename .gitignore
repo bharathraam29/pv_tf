@@ -1,6 +1,12 @@
+
 LINEMOD/*/JPEGImages
 LINEMOD/*/labels
 LINEMOD/*/mask
 __pycache__/*
 *.pth
 *.part*
+*.h5*
+*.ipynb_check*
+LINEMOD/*/pose
+LINEMOD/
+models/

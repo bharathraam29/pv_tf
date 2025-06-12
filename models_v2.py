@@ -137,7 +137,7 @@ def get_history_path():
 
 
 
-def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True , inputShape = (480, 640, 3)):
+def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, dataSplit = True, augmentation = True , inputShape = (480, 640, 3)):
 	
 	if not (outVectors):
 		print("At least one of outVectors  must be set to True.")
@@ -147,20 +147,20 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
 	
 	if dataSplit:
-		trainData, validData = data_v2.get_data_split(modelClass = modelClass)
+		trainData, validData = data_v2.get_data_split(gen_new = True, model_class= modelClass)
 	
 	logger = tf.keras.callbacks.CSVLogger(os.path.join(get_history_path(), f"{modelName}_{modelClass}_history.csv"), append = True)
 	data_h, data_w = inputShape[0], inputShape[1]
 	if dataSplit:
-		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation, height = data_h, width = data_w),
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, augmentation = augmentation, height = data_h, width = data_w),
 							 steps_per_epoch = math.ceil(len(trainData) / batchSize),
 							 epochs = epochs,
-							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, altLabels = altLabels, augmentation = False, height = data_h, width = data_w),
+							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData,  augmentation = False, height = data_h, width = data_w),
 							 validation_steps = math.ceil(len(validData) / batchSize),
 							 callbacks = [logger],
 							 max_queue_size = 2)
 	else:
-		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, altLabels = altLabels, augmentation = augmentation, height = data_h, width = data_w),
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, augmentation = augmentation, height = data_h, width = data_w),
 							 steps_per_epoch = 100,
 							 epochs = epochs,
 							 callbacks = [logger],
@@ -359,7 +359,7 @@ if __name__ == "__main__" :
 	model_set = modelSet('stvNet_new_coords_LINEMOD', modelClass='cat', inputShape=input_shape)
 	print("Training {0}".format(model_set.name))
 	model = modelsDict[model_set.name]
-	trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, altLabels = model.altLabels, augmentation = model.augmentation, inputShape=(480, 640, 3))
+	trainModel(model.structure, model.generator, modelClass = model_set.modelClass, epochs = model.epochs, losses = model.losses, modelName = model_set.name,  outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics,  augmentation = model.augmentation, inputShape=(480, 640, 3))
 	evaluateModels([model_set])
 	loadHistories([model_set])
 	plotHistories([model_set])

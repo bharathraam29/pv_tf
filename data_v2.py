@@ -67,7 +67,7 @@ def set_training_pixel(out_img, y, x, labels, height, width):
 
 
 
-def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, augmentation=True, altLabels=True):
+def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, width=640, augmentation=True):
     basePath = get_linemod_path(modelClass)
     if masterList is None:
         masterList = master_list_gen(basePath)
@@ -83,7 +83,7 @@ def coordsTrainingGenerator(modelClass, batchSize, masterList=None, height=480, 
                 random.shuffle(masterList)
             x = read_image(os.path.join(basePath, 'JPEGImages', masterList[i][0]), height, width)
 
-            labels_dir = 'altLabels' if altLabels else 'labels'
+            labels_dir = 'labels'
             with open(os.path.join(basePath, labels_dir, masterList[i][2])) as f:
                 labels = f.readline().split(' ')[1:19] # we dump the class label
 

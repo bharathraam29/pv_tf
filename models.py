@@ -312,10 +312,10 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 	logger = tf.keras.callbacks.CSVLogger(os.path.join(get_history_path(), f"{modelName}_{modelClass}_history.csv"), append = True)
 	data_h, data_w = inputShape[0], inputShape[1]
 	if dataSplit:
-		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation, height = data_h, width = data_w),
+		historyLog = model.fit(modelGen(modelClass, batchSize = batchSize, masterList = trainData, augmentation = augmentation, height = data_h, width = data_w),
 							 steps_per_epoch = math.ceil(len(trainData) / batchSize),
 							 epochs = epochs,
-							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, altLabels = altLabels, augmentation = False, height = data_h, width = data_w),
+							 validation_data = modelGen(modelClass, batchSize = batchSize, masterList = validData, augmentation = False, height = data_h, width = data_w),
 							 validation_steps = math.ceil(len(validData) / batchSize),
 							 callbacks = [logger],
 							 max_queue_size = 2)
@@ -448,7 +448,7 @@ def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
 			else:
 				raise Exception("Probably shouldn't be here ever..")
 		else:
-			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
+			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 
 def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.legacy.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']):
 	if not (outVectors or outClasses):
@@ -557,14 +557,16 @@ modelsDict = {
 	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
 	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, augmentation = False),
 	'stvNet_new_coords_HANDAL' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False, inputShape = (1440,1920, 3)),
+	'PVNET_LINEMOD' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
+
 }
 	
 if __name__ == "__main__" :
-	model_info = modelsDict['stvNet_new_coords_HANDAL']
+	model_info = modelsDict['stvNet_new_coords']
 	input_shape = model_info.inputShape if hasattr(model_info, 'inputShape') else None
-	modelSets = [modelSet('stvNet_new_coords_HANDAL', modelClass='eggbox', inputShape=input_shape)]
-	trainModels(modelSets)
+	modelSets = [modelSet('PVNET_LINEMOD', inputShape=input_shape)]
+	# trainModels(modelSets)
 	
-	evaluateModels(modelSets)
+	# evaluateModels(modelSets)
 	loadHistories(modelSets)
 	plotHistories(modelSets)

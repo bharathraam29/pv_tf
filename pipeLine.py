@@ -404,4 +404,4 @@ if __name__ == "__main__" :
 	# modelSets = [modelSet('stvNet_new_combined')] # combined model
 	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})] #separate models
 	evalModels(modelSets, trials = 10, showImageChoice = True, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
-	#accuracyPlot(modelSets, True)
+	accuracyPlot(modelSets, True)
